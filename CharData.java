@@ -13,7 +13,7 @@ public class CharData {
 	double p;    
 
 	// a commulative probability (number between 0 and 1)
-	double cp;
+	double cp; 
 
 	/** Creates and initializes a character data object. */
 	public CharData(char chr) {
