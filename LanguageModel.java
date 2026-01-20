@@ -1,15 +1,3 @@
-
-
-דילוג לתוכן
-שימוש ב-Gmail עם קוראי מסך
-שיחות
-0% מתוך 2,048GB בשימוש
-תנאים · פרטיות · מדיניות התוכנית
-פעילות אחרונה בחשבון: לפני 12 שעות
-פרטים
-Gemini
-חיפוש מידע
-‫‫Gemini ב-Workspace עלול לטעות. מידע נוסף
 import java.util.HashMap;
 import java.util.Random;
 
@@ -48,7 +36,6 @@ public class LanguageModel {
         String window = "";
         char c;
         In in = new In(fileName);
-        // Reads just enough characters to form the first window
         while (window.length() < windowLength && !in.isEmpty()) {
             c = in.readChar();
             if (c == '\r') {
@@ -56,30 +43,19 @@ public class LanguageModel {
             }
             window += c;
         }
-        // Processes the entire text, one character at a time
         while (!in.isEmpty()) {
-            // Gets the next character
             c = in.readChar();
             if (c == '\r') {
                 continue;
             }
-            // Checks if the window is already in the map
             List probs = CharDataMap.get(window);
-            // If the window was not found in the map
-            // Creates a new empty list, and adds (window,list) to the map
             if (probs == null) {
                 probs = new List();
                 CharDataMap.put(window, probs);
             }
-            // Calculates the counts of the current character.
             probs.update(c);
-            // Advances the window: adds c to the window’s end, and deletes the
-            // window's first character.
             window = window.substring(1) + c;
         }
-        // The entire file has been processed, and all the characters have been counted.
-        // Proceeds to compute and set the p and cp fields of all the CharData objects
-        // in each linked list in the map.
         for (List probs : CharDataMap.values()) {
             calculateProbabilities(probs);
         }
@@ -87,19 +63,19 @@ public class LanguageModel {
 
     // Computes and sets the probabilities (p and cp fields) of all the
 	// characters in the given list. */
-	public void calculateProbabilities(List probs) {				
-		long numOfLetters = 0;
-        for (int i = 0; i < probs.getSize(); i++) {
-            numOfLetters += probs.get(i).count;
+	public void calculateProbabilities(List probs) {				              
+        long numOfLetters = 0;
+        CharData[] ads = probs.toArray(); 
+        for (CharData cd : ads) {
+            numOfLetters += cd.count;
         }
         double cumulativeP = 0.0;
-        for (int i = 0; i < probs.getSize(); i++) {
-            CharData currentCD = probs.get(i); 
-            currentCD.p = (double) currentCD.count / numOfLetters;
-            cumulativeP += currentCD.p;
-            currentCD.cp = cumulativeP;
+        for (CharData cd : ads) {
+            cd.p = (double) cd.count / numOfLetters;
+            cumulativeP += cd.p;
+            cd.cp = cumulativeP;
         }
-	}
+    }
 
     // Returns a random character from the given probabilities list.
 	char getRandomChar(List probs) {
