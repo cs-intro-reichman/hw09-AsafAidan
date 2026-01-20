@@ -5,7 +5,7 @@ public class LanguageModel {
 
     // The map of this model.
     // Maps windows to lists of charachter data objects.
-    HashMap<String, List> CharDataMap;
+    HashMap<String, List> CharDataMap; 
     
     // The window length used in this model.
     int windowLength;
@@ -33,21 +33,60 @@ public class LanguageModel {
 
     /** Builds a language model from the text in the given file (the corpus). */
 	public void train(String fileName) {
-		// Your code goes here
-	}
+        String window = "";
+        char c;
+        In in = new In(fileName);
+        while (window.length() < windowLength && !in.isEmpty()) {
+            c = in.readChar();
+            if (c == '\r') {
+                continue;
+            }
+            window += c;
+        }
+        while (!in.isEmpty()) {
+            c = in.readChar();
+            if (c == '\r') {
+                continue;
+            }
+            List probs = CharDataMap.get(window);
+            if (probs == null) {
+                probs = new List();
+                CharDataMap.put(window, probs);
+            }
+            probs.update(c);
+            window = window.substring(1) + c;
+        }
+        for (List probs : CharDataMap.values()) {
+            calculateProbabilities(probs);
+        }
+    }
 
     // Computes and sets the probabilities (p and cp fields) of all the
 	// characters in the given list. */
-	void calculateProbabilities(List probs) {				
-		// Your code goes here
-	}
+	public void calculateProbabilities(List probs) {				              
+        long numOfLetters = 0;
+        CharData[] ads = probs.toArray(); 
+        for (CharData cd : ads) {
+            numOfLetters += cd.count;
+        }
+        double cumulativeP = 0.0;
+        for (CharData cd : ads) {
+            cd.p = (double) cd.count / numOfLetters;
+            cumulativeP += cd.p;
+            cd.cp = cumulativeP;
+        }
+    }
 
     // Returns a random character from the given probabilities list.
 	char getRandomChar(List probs) {
-		// Your code goes here
-		return ' ';
+		double r = randomGenerator.nextDouble();
+        for (int i = 0; i < probs.getSize(); i++) {
+            CharData currentCD = probs.get(i);
+            if (r < currentCD.cp) return currentCD.chr;
+        }
+		return probs.get(probs.getSize() -1).chr;
 	}
-
+    
     /**
 	 * Generates a random text, based on the probabilities that were learned during training. 
 	 * @param initialText - text to start with. If initialText's last substring of size numberOfLetters
@@ -56,9 +95,22 @@ public class LanguageModel {
 	 * @return the generated text
 	 */
 	public String generate(String initialText, int textLength) {
-		// Your code goes here
-        return "";
-	}
+		if (initialText.length() < windowLength) {
+            return initialText;
+        }  
+        StringBuilder generatedText = new StringBuilder(initialText);
+        String window = initialText.substring(initialText.length() - windowLength); 
+        while (generatedText.length() < initialText.length() + textLength) {
+            List probs = CharDataMap.get(window);
+            if (probs == null) {
+                break;
+            } 
+            char nextCh = getRandomChar(probs);
+            generatedText.append(nextCh);            
+            window = window.substring(1) + nextCh;
+        }
+        return generatedText.toString();
+    }
 
     /** Returns a string representing the map of this language model. */
 	public String toString() {
@@ -71,6 +123,21 @@ public class LanguageModel {
 	}
 
     public static void main(String[] args) {
-		// Your code goes here
+        int windowLength = Integer.parseInt(args[0]);
+        String initialText = args[1];
+        int generatedTextLength = Integer.parseInt(args[2]);
+        Boolean randomGeneration = args[3].equals("random");
+        String fileName = args[4];
+        // Create the LanguageModel object
+        LanguageModel lm;
+        if (randomGeneration)
+        lm = new LanguageModel(windowLength);
+        else
+        lm = new LanguageModel(windowLength, 20);
+        // Trains the model, creating the map.
+        lm.train(fileName);
+        // Generates text, and prints it.
+        System.out.println(lm.generate(initialText, generatedTextLength));
     }
 }
+        
