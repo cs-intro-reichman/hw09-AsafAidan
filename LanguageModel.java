@@ -1,3 +1,15 @@
+
+
+דילוג לתוכן
+שימוש ב-Gmail עם קוראי מסך
+שיחות
+0% מתוך 2,048GB בשימוש
+תנאים · פרטיות · מדיניות התוכנית
+פעילות אחרונה בחשבון: לפני 12 שעות
+פרטים
+Gemini
+חיפוש מידע
+‫‫Gemini ב-Workspace עלול לטעות. מידע נוסף
 import java.util.HashMap;
 import java.util.Random;
 
@@ -37,38 +49,45 @@ public class LanguageModel {
         char c;
         In in = new In(fileName);
         // Reads just enough characters to form the first window
-        for (int i = 0; i < windowLength && ! in.isEmpty(); i++) {
-            window += in.readChar();
+        while (window.length() < windowLength && !in.isEmpty()) {
+            c = in.readChar();
+            if (c == '\r') {
+                continue;
+            }
+            window += c;
         }
         // Processes the entire text, one character at a time
         while (!in.isEmpty()) {
-        // Gets the next character
-        c = in.readChar();
-        // Checks if the window is already in the map
-        List probs = CharDataMap.get(window);
-        // If the window was not found in the map
-        // Creates a new empty list, and adds (window,list) to the map
-        if (probs == null) {
-            probs = new List();
-            CharDataMap.put(window, probs);
-        }
-        // Calculates the counts of the current character.
-        probs.update(c);
-        // Advances the window: adds c to the window’s end, and deletes the
-        // window's first character.
-        window = window.substring(1) + c;
+            // Gets the next character
+            c = in.readChar();
+            if (c == '\r') {
+                continue;
+            }
+            // Checks if the window is already in the map
+            List probs = CharDataMap.get(window);
+            // If the window was not found in the map
+            // Creates a new empty list, and adds (window,list) to the map
+            if (probs == null) {
+                probs = new List();
+                CharDataMap.put(window, probs);
+            }
+            // Calculates the counts of the current character.
+            probs.update(c);
+            // Advances the window: adds c to the window’s end, and deletes the
+            // window's first character.
+            window = window.substring(1) + c;
         }
         // The entire file has been processed, and all the characters have been counted.
         // Proceeds to compute and set the p and cp fields of all the CharData objects
         // in each linked list in the map.
         for (List probs : CharDataMap.values()) {
-        calculateProbabilities(probs);
+            calculateProbabilities(probs);
         }
-        }
+    }
 
     // Computes and sets the probabilities (p and cp fields) of all the
 	// characters in the given list. */
-	void calculateProbabilities(List probs) {				
+	public void calculateProbabilities(List probs) {				
 		long numOfLetters = 0;
         for (int i = 0; i < probs.getSize(); i++) {
             numOfLetters += probs.get(i).count;
@@ -91,7 +110,7 @@ public class LanguageModel {
         }
 		return probs.get(probs.getSize() -1).chr;
 	}
-
+    
     /**
 	 * Generates a random text, based on the probabilities that were learned during training. 
 	 * @param initialText - text to start with. If initialText's last substring of size numberOfLetters
@@ -105,14 +124,14 @@ public class LanguageModel {
         }  
         StringBuilder generatedText = new StringBuilder(initialText);
         String window = initialText.substring(initialText.length() - windowLength); 
-        while (generatedText.length() < textLength) {
+        while (generatedText.length() < initialText.length() + textLength) {
             List probs = CharDataMap.get(window);
             if (probs == null) {
                 break;
             } 
-            char nextChar = getRandomChar(probs);
-            generatedText.append(nextChar);            
-            window = generatedText.substring(generatedText.length() - windowLength);
+            char nextCh = getRandomChar(probs);
+            generatedText.append(nextCh);            
+            window = window.substring(1) + nextCh;
         }
         return generatedText.toString();
     }
